@@ -17,8 +17,16 @@
 
   <div class="grid">
     <!-- ============ player ============ -->
-    <main class="stage" id="stage">
-      <div id="player"></div>
+    <main class="stage">
+      <!-- iframe de incorporação do YouTube.
+           enablejsapi=1 permite que o script.js retome de onde o usuário parou.
+           IMPORTANTE: se trocar o vídeo, troque o ID aqui E em VIDEO_ID no js/script.js -->
+      <iframe id="player"
+              src="https://www.youtube.com/embed/lzBobeS34H8?enablejsapi=1&amp;rel=0&amp;modestbranding=1&amp;playsinline=1"
+              title="Imersão Life Reset"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen></iframe>
 
       <div class="badges">
         <span class="badge live" id="badgeLive">

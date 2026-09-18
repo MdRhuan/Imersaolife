@@ -2,7 +2,6 @@
 
 /* ===== configuração ===== */
 const VIDEO_ID   = "lzBobeS34H8";        // ID do vídeo no YouTube (a parte final de youtu.be/<ID>)
-const VIEWERS    = 0;                     // número ao lado do ícone de olho (0 = esconde o selo)
 const MODO       = "Replay";             // texto do selo vermelho
 const MENSAGENS  = [
   // formato: { autor: "Suporte Life Reset", texto: "...", staff: true }
@@ -11,7 +10,7 @@ const OFERTA_URL = "https://wa.link/53l2yi";
 
 /* ===== atalhos ===== */
 const $ = id => document.getElementById(id);
-const stage = $('stage'), drop = $('drop'), toast = $('toast');
+const drop = $('drop'), toast = $('toast');
 let toastTimer;
 
 const flash = msg => {
@@ -58,15 +57,10 @@ const END_MARGIN   = 10;   // se faltar menos que isso para o fim, recomeça do 
 let player, restored = false, saveTimer = null;
 
 // callback chamado pela API do YouTube quando ela termina de carregar
+// o iframe já está no HTML (com enablejsapi=1); aqui só nos conectamos a ele
+// para poder retomar de onde o usuário parou e abrir a oferta no fim.
 window.onYouTubeIframeAPIReady = function () {
   player = new YT.Player('player', {
-    videoId: VIDEO_ID,
-    playerVars: {
-      rel: 0,             // limita vídeos "relacionados" ao mesmo canal
-      modestbranding: 1,  // menos marca do YouTube
-      playsinline: 1,     // no iPhone, toca dentro da página (não em tela cheia forçada)
-      origin: window.location.origin
-    },
     events: {
       onReady: onPlayerReady,
       onStateChange: onPlayerState,
@@ -125,9 +119,20 @@ function onPlayerState(e) {
   }
 }
 
-function onPlayerError() {
-  // vídeo privado, removido ou com incorporação desativada
+function onPlayerError(e) {
+  // mostra a caixa de aviso e explica a causa conforme o código do YouTube
   drop.classList.remove('gone');
+  const causas = {
+    2:   'ID do vídeo inválido (verifique VIDEO_ID no script.js).',
+    5:   'Erro do player HTML5. Tente outro navegador.',
+    100: 'Vídeo não encontrado, removido ou marcado como privado.',
+    101: 'O dono do vídeo desativou a reprodução em outros sites (incorporação).',
+    150: 'O dono do vídeo desativou a reprodução em outros sites (incorporação).'
+  };
+  const msg = causas[e && e.data] || ('Erro desconhecido (código ' + (e && e.data) + ').');
+  console.error('[YouTube] Falha ao carregar o vídeo:', e && e.data, '-', msg);
+  const p = drop.querySelector('p');
+  if (p) p.textContent = msg;
 }
 
 /* ===== pop-up de oferta ao terminar o vídeo ===== */
