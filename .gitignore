@@ -1,0 +1,11 @@
+# Vídeos e arquivos grandes (acima do limite do GitHub de 100 MB)
+video/
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Sistema operacional
+Thumbs.db
+Desktop.ini
+.DS_Store

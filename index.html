@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Imersão Reset Total</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="js/script.js" defer></script>
+</head>
+<body>
+
+<div class="page">
+  <h1>Imersão Reset Total</h1>
+
+  <div class="grid">
+    <!-- ============ player ============ -->
+    <main class="stage" id="stage">
+      <video id="v" playsinline preload="metadata"></video>
+
+      <div class="badges">
+        <span class="badge live" id="badgeLive">
+          <svg class="dot" viewBox="0 0 24 24"><path d="M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm4.9-3.1-1.4 1.4a5 5 0 0 1 0 7.4l1.4 1.4a7 7 0 0 0 0-10.2zm-9.8 0a7 7 0 0 0 0 10.2l1.4-1.4a5 5 0 0 1 0-7.4L7.1 6.9zM19.8 4l-1.4 1.4a9 9 0 0 1 0 13.2l1.4 1.4a11 11 0 0 0 0-16zM4.2 4a11 11 0 0 0 0 16l1.4-1.4a9 9 0 0 1 0-13.2L4.2 4z"/></svg>
+          Replay
+        </span>
+        <span class="badge count" id="badgeCount">
+          <svg viewBox="0 0 24 24"><path d="M12 5c-5 0-9.3 3.1-11 7 1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+          <span id="viewers">0</span>
+        </span>
+      </div>
+
+      <div class="spin"></div>
+      <div class="toast" id="toast"></div>
+
+      <button class="bigplay" id="bigplay" aria-label="Reproduzir">
+        <span><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72L19 12z"/></svg></span>
+      </button>
+
+      <div class="drop gone" id="drop">
+        <div class="inner">
+          <h2>Vídeo indisponível no momento</h2>
+          <p>Não foi possível carregar a transmissão. Recarregue a página ou fale com o suporte.</p>
+        </div>
+      </div>
+
+      <div class="bar" id="bar">
+        <div class="track" id="seek">
+          <div class="rail"><div class="buf" id="buf"></div><div class="fill" id="fill"></div></div>
+          <div class="knob" id="knob"></div>
+          <input type="range" id="seekInput" min="0" max="1000" value="0" step="1" aria-label="Posição do vídeo">
+        </div>
+
+        <div class="row main">
+          <button class="ctl" id="play" aria-label="Reproduzir (espaço)">
+            <svg id="iPlay" viewBox="0 0 24 24"><path d="M8 5.14v13.72L19 12z"/></svg>
+            <svg id="iPause" viewBox="0 0 24 24" class="hidden"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+          </button>
+          <button class="ctl" id="back" aria-label="Voltar 10 segundos">
+            <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/><text x="12.5" y="16.5" font-size="7" font-weight="700" text-anchor="middle" fill="currentColor">10</text></svg>
+          </button>
+          <button class="ctl" id="fwd" aria-label="Avançar 10 segundos">
+            <svg viewBox="0 0 24 24"><path d="M12 5V1l5 5-5 5V7a6 6 0 1 0 6 6h2a8 8 0 1 1-8-8z"/><text x="12.5" y="16.5" font-size="7" font-weight="700" text-anchor="middle" fill="currentColor">10</text></svg>
+          </button>
+
+          <div class="vol" id="vol">
+            <button class="ctl" id="mute" aria-label="Silenciar (M)">
+              <svg id="iVol" viewBox="0 0 24 24"><path d="M4 9v6h4l5 5V4L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 2.2v2.1a7.7 7.7 0 0 1 0 15.4v2.1a9.8 9.8 0 0 0 0-19.6z"/></svg>
+              <svg id="iMute" viewBox="0 0 24 24" class="hidden"><path d="M4 9v6h4l5 5V4L8 9H4zm17 1.4L19.6 9 17 11.6 14.4 9 13 10.4 15.6 13 13 15.6 14.4 17 17 14.4 19.6 17 21 15.6 18.4 13 21 10.4z"/></svg>
+            </button>
+            <div class="track" id="volTrack">
+              <div class="rail"><div class="fill" id="volFill"></div></div>
+              <div class="knob" id="volKnob"></div>
+              <input type="range" id="volInput" min="0" max="100" value="100" step="1" aria-label="Volume">
+            </div>
+          </div>
+
+          <div class="time"><span id="cur">0:00</span><span class="sep">/</span><span class="total" id="dur">0:00</span></div>
+
+          <div class="spacer"></div>
+
+          <div class="pop">
+            <button class="ctl rate" id="rateBtn" aria-haspopup="true" aria-expanded="false" aria-label="Velocidade de reprodução">1x</button>
+            <div class="menu" id="rateMenu" role="menu"></div>
+          </div>
+          <button class="ctl" id="pip" aria-label="Picture-in-picture">
+            <svg viewBox="0 0 24 24"><path d="M19 11h-8v6h8v-6zm4 8V4.98A2 2 0 0 0 21 3H3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2zm-2 .02H3V4.97h18v14.05z"/></svg>
+          </button>
+          <button class="ctl" id="fs" aria-label="Tela cheia (F)">
+            <svg id="iFs" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+            <svg id="iFsOff" viewBox="0 0 24 24" class="hidden"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============ lateral ============ -->
+    <aside class="side">
+      <div class="tabs" role="tablist">
+        <button class="tab" id="tabChat" role="tab" aria-selected="true" aria-controls="panelChat">Chat</button>
+        <button class="tab" id="tabSup" role="tab" aria-selected="false" aria-controls="panelSup">Suporte</button>
+      </div>
+
+      <div class="panel" id="panelChat" role="tabpanel" aria-labelledby="tabChat">
+        <div class="msgs" id="msgs"></div>
+      </div>
+
+      <div class="panel" id="panelSup" role="tabpanel" aria-labelledby="tabSup" hidden>
+        <div class="support">
+          <figure class="card">
+            <div class="avatar">
+              <img id="supPhoto" src="img/Lari.png" alt="Atendimento Life Reset">
+              <span class="initials" id="supFallback" aria-hidden="true">LR</span>
+            </div>
+            <figcaption>
+              <h3>Suporte Life Reset</h3>
+              <p>Dúvidas sobre o acesso, o conteúdo ou a sua inscrição? Fale com a nossa equipe pelo WhatsApp.</p>
+            </figcaption>
+            <a class="wa" href="https://wa.link/o7qj3l" target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 14.4c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.1-.8 1-.9 1.2-.3.2-.6.1a8.4 8.4 0 0 1-2.5-1.5 9.3 9.3 0 0 1-1.7-2.1c-.2-.3 0-.5.1-.6l.5-.6a2 2 0 0 0 .3-.5.6.6 0 0 0 0-.5L9 6.7c-.2-.5-.5-.5-.7-.5h-.6a1.1 1.1 0 0 0-.8.4 3.4 3.4 0 0 0-1 2.5 5.8 5.8 0 0 0 1.2 3.1 13.4 13.4 0 0 0 5.2 4.6c.7.3 1.3.5 1.7.6a4.2 4.2 0 0 0 1.9.1 3.1 3.1 0 0 0 2-1.4 2.5 2.5 0 0 0 .2-1.4c-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg>
+              Chamar no WhatsApp
+            </a>
+          </figure>
+        </div>
+      </div>
+
+      <div class="note" id="note">Comentários desativados...</div>
+    </aside>
+  </div>
+
+  <footer>
+    <span class="seal">
+      <svg viewBox="0 0 24 24"><path d="M12 1 3 5v6c0 5.6 3.8 10.7 9 12 5.2-1.3 9-6.4 9-12V5l-9-4zm-1.2 15L7 12.2l1.4-1.4 2.4 2.4 5-5L17.2 9l-6.4 7z"/></svg>
+      Site seguro
+    </span>
+    <span class="seal">
+      <svg viewBox="0 0 24 24"><path d="M18 8h-1V6a5 5 0 0 0-10 0v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zM9 6a3 3 0 0 1 6 0v2H9V6zm3 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>
+      Privacidade protegida
+    </span>
+  </footer>
+</div>
+
+<!-- ============ oferta ao fim do vídeo ============ -->
+<div class="modal" id="ofertaModal" hidden>
+  <div class="modal-bg" data-close></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-label="Condição especial de aniversário">
+    <button class="modal-x" id="ofertaFechar" aria-label="Fechar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z"/></svg>
+    </button>
+    <img class="modal-banner" src="img/BannerReset.png"
+         alt="Reset Total — 1 ano Life Reset, condição especial de aniversário, 80% OFF">
+    <div class="modal-foot">
+      <a class="cta" id="ofertaCta" href="#" target="_blank" rel="noopener noreferrer">
+        Clique aqui para garantir a promoção
+      </a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
