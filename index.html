@@ -18,79 +18,21 @@
   <div class="grid">
     <!-- ============ player ============ -->
     <main class="stage" id="stage">
-      <video id="v" playsinline preload="metadata"></video>
+      <div id="player"></div>
 
       <div class="badges">
         <span class="badge live" id="badgeLive">
           <svg class="dot" viewBox="0 0 24 24"><path d="M12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm4.9-3.1-1.4 1.4a5 5 0 0 1 0 7.4l1.4 1.4a7 7 0 0 0 0-10.2zm-9.8 0a7 7 0 0 0 0 10.2l1.4-1.4a5 5 0 0 1 0-7.4L7.1 6.9zM19.8 4l-1.4 1.4a9 9 0 0 1 0 13.2l1.4 1.4a11 11 0 0 0 0-16zM4.2 4a11 11 0 0 0 0 16l1.4-1.4a9 9 0 0 1 0-13.2L4.2 4z"/></svg>
           Replay
         </span>
-        <span class="badge count" id="badgeCount">
-          <svg viewBox="0 0 24 24"><path d="M12 5c-5 0-9.3 3.1-11 7 1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
-          <span id="viewers">0</span>
-        </span>
       </div>
 
-      <div class="spin"></div>
       <div class="toast" id="toast"></div>
-
-      <button class="bigplay" id="bigplay" aria-label="Reproduzir">
-        <span><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72L19 12z"/></svg></span>
-      </button>
 
       <div class="drop gone" id="drop">
         <div class="inner">
           <h2>Vídeo indisponível no momento</h2>
-          <p>Não foi possível carregar a transmissão. Recarregue a página ou fale com o suporte.</p>
-        </div>
-      </div>
-
-      <div class="bar" id="bar">
-        <div class="track" id="seek">
-          <div class="rail"><div class="buf" id="buf"></div><div class="fill" id="fill"></div></div>
-          <div class="knob" id="knob"></div>
-          <input type="range" id="seekInput" min="0" max="1000" value="0" step="1" aria-label="Posição do vídeo">
-        </div>
-
-        <div class="row main">
-          <button class="ctl" id="play" aria-label="Reproduzir (espaço)">
-            <svg id="iPlay" viewBox="0 0 24 24"><path d="M8 5.14v13.72L19 12z"/></svg>
-            <svg id="iPause" viewBox="0 0 24 24" class="hidden"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
-          </button>
-          <button class="ctl" id="back" aria-label="Voltar 10 segundos">
-            <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8z"/><text x="12.5" y="16.5" font-size="7" font-weight="700" text-anchor="middle" fill="currentColor">10</text></svg>
-          </button>
-          <button class="ctl" id="fwd" aria-label="Avançar 10 segundos">
-            <svg viewBox="0 0 24 24"><path d="M12 5V1l5 5-5 5V7a6 6 0 1 0 6 6h2a8 8 0 1 1-8-8z"/><text x="12.5" y="16.5" font-size="7" font-weight="700" text-anchor="middle" fill="currentColor">10</text></svg>
-          </button>
-
-          <div class="vol" id="vol">
-            <button class="ctl" id="mute" aria-label="Silenciar (M)">
-              <svg id="iVol" viewBox="0 0 24 24"><path d="M4 9v6h4l5 5V4L8 9H4zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 2.2v2.1a7.7 7.7 0 0 1 0 15.4v2.1a9.8 9.8 0 0 0 0-19.6z"/></svg>
-              <svg id="iMute" viewBox="0 0 24 24" class="hidden"><path d="M4 9v6h4l5 5V4L8 9H4zm17 1.4L19.6 9 17 11.6 14.4 9 13 10.4 15.6 13 13 15.6 14.4 17 17 14.4 19.6 17 21 15.6 18.4 13 21 10.4z"/></svg>
-            </button>
-            <div class="track" id="volTrack">
-              <div class="rail"><div class="fill" id="volFill"></div></div>
-              <div class="knob" id="volKnob"></div>
-              <input type="range" id="volInput" min="0" max="100" value="100" step="1" aria-label="Volume">
-            </div>
-          </div>
-
-          <div class="time"><span id="cur">0:00</span><span class="sep">/</span><span class="total" id="dur">0:00</span></div>
-
-          <div class="spacer"></div>
-
-          <div class="pop">
-            <button class="ctl rate" id="rateBtn" aria-haspopup="true" aria-expanded="false" aria-label="Velocidade de reprodução">1x</button>
-            <div class="menu" id="rateMenu" role="menu"></div>
-          </div>
-          <button class="ctl" id="pip" aria-label="Picture-in-picture">
-            <svg viewBox="0 0 24 24"><path d="M19 11h-8v6h8v-6zm4 8V4.98A2 2 0 0 0 21 3H3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2zm-2 .02H3V4.97h18v14.05z"/></svg>
-          </button>
-          <button class="ctl" id="fs" aria-label="Tela cheia (F)">
-            <svg id="iFs" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
-            <svg id="iFsOff" viewBox="0 0 24 24" class="hidden"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
-          </button>
+          <p>Não foi possível carregar o vídeo. Recarregue a página ou fale com o suporte.</p>
         </div>
       </div>
     </main>

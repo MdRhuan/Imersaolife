@@ -1,38 +1,26 @@
-/* Imersão Reset Total — player de vídeo, abas e suporte */
+/* Imersão Reset Total — player do YouTube, abas e suporte */
 
 /* ===== configuração ===== */
-const VIDEO_SRC = encodeURI("video/Cópia de Life Reset - Transmissão ao vivo Gravada v2.mp4");
-const VIEWERS     = 0;                  // número exibido ao lado do ícone de olho (0 = esconde o selo)
-const MODO        = "Replay";           // texto do selo vermelho
-const MENSAGENS   = [
+const VIDEO_ID   = "lzBobeS34H8";        // ID do vídeo no YouTube (a parte final de youtu.be/<ID>)
+const VIEWERS    = 0;                     // número ao lado do ícone de olho (0 = esconde o selo)
+const MODO       = "Replay";             // texto do selo vermelho
+const MENSAGENS  = [
   // formato: { autor: "Suporte Life Reset", texto: "...", staff: true }
 ];
-const OFERTA_URL  = "https://wa.link/53l2yi";
+const OFERTA_URL = "https://wa.link/53l2yi";
 
 /* ===== atalhos ===== */
 const $ = id => document.getElementById(id);
-const v = $('v'), stage = $('stage'), drop = $('drop'), menu = $('rateMenu');
-const fill = $('fill'), buf = $('buf'), knob = $('knob'), seekInput = $('seekInput');
-const volFill = $('volFill'), volKnob = $('volKnob'), volInput = $('volInput'), toast = $('toast');
-let hideTimer, toastTimer;
+const stage = $('stage'), drop = $('drop'), toast = $('toast');
+let toastTimer;
 
-const fmt = s => {
-  if (!isFinite(s)) return '0:00';
-  s = Math.max(0, Math.floor(s));
-  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
-  return h ? h + ':' + String(m).padStart(2, '0') + ':' + String(x).padStart(2, '0')
-           : m + ':' + String(x).padStart(2, '0');
-};
 const flash = msg => {
   toast.textContent = msg; toast.classList.add('on');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('on'), 900);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('on'), 1400);
 };
-const swap = (on, off) => { on.classList.remove('hidden'); off.classList.add('hidden'); };
 
-/* ===== selos ===== */
-$('badgeLive').lastChild.textContent = ' ' + MODO;
-if (VIEWERS > 0) $('viewers').textContent = VIEWERS.toLocaleString('pt-BR');
-else $('badgeCount').classList.add('hidden');
+/* ===== selo ===== */
+if ($('badgeLive')) $('badgeLive').lastChild.textContent = ' ' + MODO;
 
 /* ===== chat ===== */
 function renderChat() {
@@ -63,189 +51,84 @@ function switchTab(chat) {
   $('note').style.visibility = chat ? 'visible' : 'hidden';
 }
 
-/* ===== fonte única e fixa ===== */
-v.src = VIDEO_SRC;
-v.addEventListener('error', () => {
-  drop.classList.remove('gone');   // única mensagem de falha: sem troca de arquivo
-  stage.classList.remove('buffering');
-});
-// bloqueia arrastar outro arquivo por cima da página
-['dragover', 'drop'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
-// remove o menu de contexto do vídeo (evita "salvar vídeo como")
-v.addEventListener('contextmenu', e => e.preventDefault());
+/* ===== player do YouTube (via API oficial) ===== */
+const PROGRESS_KEY = 'lifereset:progress:yt:' + VIDEO_ID; // guardado no dispositivo do usuário
+const SAVE_EVERY   = 5000; // salva a posição a cada 5s enquanto toca
+const END_MARGIN   = 10;   // se faltar menos que isso para o fim, recomeça do início
+let player, restored = false, saveTimer = null;
 
-/* ===== play / pause ===== */
-const toggle = () => {
-  v.paused ? v.play() : v.pause();
-};
-$('play').addEventListener('click', toggle);
-$('bigplay').addEventListener('click', toggle);
-v.addEventListener('click', toggle);
-v.addEventListener('play', () => {
-  stage.classList.add('playing'); swap($('iPause'), $('iPlay'));
-  $('play').setAttribute('aria-label', 'Pausar (espaço)'); show();
-});
-v.addEventListener('pause', () => {
-  stage.classList.remove('playing'); swap($('iPlay'), $('iPause'));
-  $('play').setAttribute('aria-label', 'Reproduzir (espaço)'); show();
-});
-v.addEventListener('waiting', () => stage.classList.add('buffering'));
-['playing', 'canplay', 'error'].forEach(e => v.addEventListener(e, () => stage.classList.remove('buffering')));
-v.addEventListener('ended', () => { stage.classList.remove('playing'); show(); abrirOferta(); });
-
-/* ===== progresso ===== */
-const paint = () => {
-  const d = v.duration || 0, p = d ? v.currentTime / d : 0;
-  fill.style.width = knob.style.left = (p * 100) + '%';
-  seekInput.value = Math.round(p * 1000);
-  $('cur').textContent = fmt(v.currentTime);
-  if (v.buffered.length && d) buf.style.width = (v.buffered.end(v.buffered.length - 1) / d * 100) + '%';
-};
-v.addEventListener('timeupdate', paint);
-v.addEventListener('progress', paint);
-v.addEventListener('loadedmetadata', () => { $('dur').textContent = fmt(v.duration); paint(); });
-
-/* ===== retomar de onde parou (salvo no proprio dispositivo do usuario) ===== */
-const PROGRESS_KEY = 'lifereset:progress:' + VIDEO_SRC; // muda junto com o video
-const SAVE_EVERY   = 5;   // salva no maximo a cada 5s de reproducao
-const END_MARGIN   = 10;  // se faltar menos que isso p/ o fim, recomeca do inicio
-let lastSaved = 0;
-
-const salvarProgresso = () => {
-  if (v.duration && v.currentTime > 0 && v.currentTime < v.duration - 1) {
-    try { localStorage.setItem(PROGRESS_KEY, String(v.currentTime)); } catch (e) {}
-  }
-};
-
-// restaura a posicao assim que o video tem metadados (duracao disponivel)
-v.addEventListener('loadedmetadata', () => {
-  let saved;
-  try { saved = parseFloat(localStorage.getItem(PROGRESS_KEY)); } catch (e) { return; }
-  if (isFinite(saved) && saved > 0 && v.duration && saved < v.duration - END_MARGIN) {
-    v.currentTime = saved;
-    paint();
-    flash('Retomando de onde parou');
-  }
-});
-
-// salva de forma economica durante a reproducao
-v.addEventListener('timeupdate', () => {
-  if (v.duration && Math.abs(v.currentTime - lastSaved) >= SAVE_EVERY) {
-    lastSaved = v.currentTime;
-    salvarProgresso();
-  }
-});
-
-// salva tambem ao pausar e ao sair/fechar/ocultar a aba
-v.addEventListener('pause', salvarProgresso);
-window.addEventListener('pagehide', salvarProgresso);
-document.addEventListener('visibilitychange', () => { if (document.hidden) salvarProgresso(); });
-
-// terminou de assistir: limpa para a proxima visita comecar do inicio
-v.addEventListener('ended', () => { try { localStorage.removeItem(PROGRESS_KEY); } catch (e) {} });
-
-seekInput.addEventListener('input', () => {
-  if (!v.duration) return;
-  const p = seekInput.value / 1000;
-  v.currentTime = p * v.duration;
-  fill.style.width = knob.style.left = (p * 100) + '%';
-  $('cur').textContent = fmt(v.currentTime);
-});
-['pointerdown', 'pointerup'].forEach(e =>
-  seekInput.addEventListener(e, ev => $('seek').classList.toggle('dragging', ev.type === 'pointerdown')));
-
-$('back').addEventListener('click', () => { v.currentTime = Math.max(0, v.currentTime - 10); flash('− 10s'); });
-$('fwd').addEventListener('click', () => { v.currentTime = Math.min(v.duration || 0, v.currentTime + 10); flash('+ 10s'); });
-
-/* ===== volume ===== */
-const paintVol = () => {
-  const val = v.muted ? 0 : v.volume;
-  volFill.style.width = volKnob.style.left = (val * 100) + '%';
-  volInput.value = Math.round(val * 100);
-  (v.muted || v.volume === 0) ? swap($('iMute'), $('iVol')) : swap($('iVol'), $('iMute'));
-};
-volInput.addEventListener('input', () => { v.volume = volInput.value / 100; v.muted = v.volume === 0; paintVol(); });
-$('mute').addEventListener('click', () => {
-  v.muted = !v.muted;
-  if (!v.muted && v.volume === 0) v.volume = .5;
-  paintVol(); flash(v.muted ? 'mudo' : 'som ligado');
-});
-v.addEventListener('volumechange', paintVol);
-paintVol();
-
-/* ===== velocidade ===== */
-const RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
-RATES.forEach(r => {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.setAttribute('role', 'menuitemradio');
-  b.textContent = (r === 1 ? 'Normal' : r + 'x');
-  b.setAttribute('aria-checked', String(r === 1));
-  b.addEventListener('click', () => { v.playbackRate = r; closeMenu(); });
-  menu.appendChild(b);
-});
-const closeMenu = () => { menu.classList.remove('on'); $('rateBtn').setAttribute('aria-expanded', 'false'); };
-$('rateBtn').addEventListener('click', e => {
-  e.stopPropagation();
-  $('rateBtn').setAttribute('aria-expanded', String(menu.classList.toggle('on')));
-});
-document.addEventListener('click', closeMenu);
-menu.addEventListener('click', e => e.stopPropagation());
-v.addEventListener('ratechange', () => {
-  $('rateBtn').textContent = (v.playbackRate === 1 ? '1x' : v.playbackRate + 'x');
-  [...menu.children].forEach((b, i) => b.setAttribute('aria-checked', String(RATES[i] === v.playbackRate)));
-});
-
-/* ===== tela cheia / PiP ===== */
-const fsToggle = () => document.fullscreenElement ? document.exitFullscreen() : stage.requestFullscreen();
-$('fs').addEventListener('click', fsToggle);
-v.addEventListener('dblclick', fsToggle);
-document.addEventListener('fullscreenchange', () => {
-  document.fullscreenElement ? swap($('iFsOff'), $('iFs')) : swap($('iFs'), $('iFsOff'));
-});
-if (document.pictureInPictureEnabled) {
-  $('pip').addEventListener('click', () => {
-    document.pictureInPictureElement ? document.exitPictureInPicture() : v.requestPictureInPicture();
-  });
-} else $('pip').classList.add('hidden');
-
-/* ===== ocultar controles ===== */
-function show() {
-  stage.classList.remove('idle');
-  clearTimeout(hideTimer);
-  if (!v.paused) hideTimer = setTimeout(() => {
-    if (!menu.classList.contains('on')) stage.classList.add('idle');
-  }, 2600);
-}
-['pointermove', 'pointerdown', 'focusin'].forEach(e => stage.addEventListener(e, show));
-stage.addEventListener('pointerleave', () => { if (!v.paused) stage.classList.add('idle'); });
-
-/* ===== teclado ===== */
-document.addEventListener('keydown', e => {
-  // com o pop-up aberto, o teclado pertence ao pop-up
-  if (!modalOferta.hidden) {
-    if (e.key === 'Escape') { e.preventDefault(); fecharOferta(); }
-    else if (e.key === 'Tab') {                    // mantém o foco dentro do pop-up
-      const alvos = [$('ofertaFechar'), $('ofertaCta')];
-      const i = alvos.indexOf(document.activeElement);
-      e.preventDefault();
-      alvos[(i + (e.shiftKey ? alvos.length - 1 : 1)) % alvos.length].focus();
+// callback chamado pela API do YouTube quando ela termina de carregar
+window.onYouTubeIframeAPIReady = function () {
+  player = new YT.Player('player', {
+    videoId: VIDEO_ID,
+    playerVars: {
+      rel: 0,             // limita vídeos "relacionados" ao mesmo canal
+      modestbranding: 1,  // menos marca do YouTube
+      playsinline: 1,     // no iPhone, toca dentro da página (não em tela cheia forçada)
+      origin: window.location.origin
+    },
+    events: {
+      onReady: onPlayerReady,
+      onStateChange: onPlayerState,
+      onError: onPlayerError
     }
-    return;
+  });
+};
+
+// injeta o script da API do YouTube (depois de definir o callback acima)
+(function loadYT() {
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+})();
+
+function posicaoSalva() {
+  let t;
+  try { t = parseFloat(localStorage.getItem(PROGRESS_KEY)); } catch (e) { return 0; }
+  return isFinite(t) && t > 0 ? t : 0;
+}
+function salvarProgresso() {
+  if (!player || !player.getCurrentTime) return;
+  const t = player.getCurrentTime(), d = player.getDuration();
+  if (t > 0 && d && t < d - 1) {
+    try { localStorage.setItem(PROGRESS_KEY, String(t)); } catch (e) {}
   }
-  const onSlider = e.target.matches && e.target.matches('input[type=range]');
-  if (onSlider && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
-  const k = e.key;
-  if (k === ' ' || k === 'k' || k === 'K') { e.preventDefault(); toggle(); }
-  else if (k === 'ArrowRight') { e.preventDefault(); v.currentTime = Math.min(v.duration || 0, v.currentTime + 10); flash('+ 10s'); }
-  else if (k === 'ArrowLeft') { e.preventDefault(); v.currentTime = Math.max(0, v.currentTime - 10); flash('− 10s'); }
-  else if (k === 'ArrowUp') { e.preventDefault(); v.muted = false; v.volume = Math.min(1, v.volume + .05); flash('volume ' + Math.round(v.volume * 100) + '%'); }
-  else if (k === 'ArrowDown') { e.preventDefault(); v.volume = Math.max(0, v.volume - .05); flash('volume ' + Math.round(v.volume * 100) + '%'); }
-  else if (k === 'm' || k === 'M') { $('mute').click(); }
-  else if (k === 'f' || k === 'F') { fsToggle(); }
-  else if (/^[0-9]$/.test(k) && v.duration) { v.currentTime = v.duration * (+k / 10); flash(k * 10 + '%'); }
-  show();
-});
+}
+
+function onPlayerReady() {
+  // salva também ao sair/fechar/ocultar a aba
+  window.addEventListener('pagehide', salvarProgresso);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) salvarProgresso(); });
+}
+
+function onPlayerState(e) {
+  if (e.data === YT.PlayerState.PLAYING) {
+    // retoma de onde parou (só na primeira vez que dá play)
+    if (!restored) {
+      restored = true;
+      const t = posicaoSalva(), d = player.getDuration();
+      if (t > 0 && d && t < d - END_MARGIN) {
+        player.seekTo(t, true);
+        flash('Retomando de onde parou');
+      }
+    }
+    // salva a posição periodicamente enquanto o vídeo toca
+    clearInterval(saveTimer);
+    saveTimer = setInterval(salvarProgresso, SAVE_EVERY);
+  } else {
+    clearInterval(saveTimer);
+    if (e.data === YT.PlayerState.PAUSED) salvarProgresso();
+    if (e.data === YT.PlayerState.ENDED) {
+      try { localStorage.removeItem(PROGRESS_KEY); } catch (e2) {} // terminou: próxima visita começa do início
+      abrirOferta();
+    }
+  }
+}
+
+function onPlayerError() {
+  // vídeo privado, removido ou com incorporação desativada
+  drop.classList.remove('gone');
+}
 
 /* ===== pop-up de oferta ao terminar o vídeo ===== */
 const modalOferta = $('ofertaModal'), ofertaCta = $('ofertaCta');
@@ -275,3 +158,15 @@ function fecharOferta() {
 
 $('ofertaFechar').addEventListener('click', fecharOferta);
 modalOferta.addEventListener('click', e => { if (e.target.hasAttribute('data-close')) fecharOferta(); });
+
+/* teclado: só atua com o pop-up aberto (mantém o foco dentro dele) */
+document.addEventListener('keydown', e => {
+  if (modalOferta.hidden) return;
+  if (e.key === 'Escape') { e.preventDefault(); fecharOferta(); }
+  else if (e.key === 'Tab') {
+    const alvos = [$('ofertaFechar'), $('ofertaCta')];
+    const i = alvos.indexOf(document.activeElement);
+    e.preventDefault();
+    alvos[(i + (e.shiftKey ? alvos.length - 1 : 1)) % alvos.length].focus();
+  }
+});
