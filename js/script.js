@@ -105,6 +105,45 @@ v.addEventListener('timeupdate', paint);
 v.addEventListener('progress', paint);
 v.addEventListener('loadedmetadata', () => { $('dur').textContent = fmt(v.duration); paint(); });
 
+/* ===== retomar de onde parou (salvo no proprio dispositivo do usuario) ===== */
+const PROGRESS_KEY = 'lifereset:progress:' + VIDEO_SRC; // muda junto com o video
+const SAVE_EVERY   = 5;   // salva no maximo a cada 5s de reproducao
+const END_MARGIN   = 10;  // se faltar menos que isso p/ o fim, recomeca do inicio
+let lastSaved = 0;
+
+const salvarProgresso = () => {
+  if (v.duration && v.currentTime > 0 && v.currentTime < v.duration - 1) {
+    try { localStorage.setItem(PROGRESS_KEY, String(v.currentTime)); } catch (e) {}
+  }
+};
+
+// restaura a posicao assim que o video tem metadados (duracao disponivel)
+v.addEventListener('loadedmetadata', () => {
+  let saved;
+  try { saved = parseFloat(localStorage.getItem(PROGRESS_KEY)); } catch (e) { return; }
+  if (isFinite(saved) && saved > 0 && v.duration && saved < v.duration - END_MARGIN) {
+    v.currentTime = saved;
+    paint();
+    flash('Retomando de onde parou');
+  }
+});
+
+// salva de forma economica durante a reproducao
+v.addEventListener('timeupdate', () => {
+  if (v.duration && Math.abs(v.currentTime - lastSaved) >= SAVE_EVERY) {
+    lastSaved = v.currentTime;
+    salvarProgresso();
+  }
+});
+
+// salva tambem ao pausar e ao sair/fechar/ocultar a aba
+v.addEventListener('pause', salvarProgresso);
+window.addEventListener('pagehide', salvarProgresso);
+document.addEventListener('visibilitychange', () => { if (document.hidden) salvarProgresso(); });
+
+// terminou de assistir: limpa para a proxima visita comecar do inicio
+v.addEventListener('ended', () => { try { localStorage.removeItem(PROGRESS_KEY); } catch (e) {} });
+
 seekInput.addEventListener('input', () => {
   if (!v.duration) return;
   const p = seekInput.value / 1000;
